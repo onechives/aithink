@@ -1,0 +1,105 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap");
+
+:root {
+  --font-title: "Space Grotesk", "IBM Plex Serif", serif;
+  --font-body: "IBM Plex Serif", serif;
+  --ink: #111111;
+  --muted: rgba(17, 17, 17, 0.6);
+  --bg: #f7f1e4;
+  --page-bg: radial-gradient(circle at top left, #fef6e5 0%, #f7f1e4 40%, #f3ede1 100%);
+  --surface: #ffffff;
+  --surface-alt: #fff4d6;
+  --chip: #f0efe9;
+  --border: rgba(17, 17, 17, 0.12);
+  --accent: #111111;
+  --accent-contrast: #fff4d6;
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+  --topbar-bg: linear-gradient(120deg, #faf7f0 0%, #f3efe6 100%);
+
+  --md-code-bg: #f2efe6;
+  --md-code-text: #2a2a2a;
+  --md-inline-code-bg: #f2efe6;
+  --md-blockquote: #f6f2e8;
+  --md-border: rgba(17, 17, 17, 0.12);
+  --md-link: #2b2b2b;
+
+  --viewport-w: 100vw;
+  --viewport-h: 100vh;
+  --mobile-unit: 1vmin;
+  --mobile-space-1: calc(var(--mobile-unit) * 1.2);
+  --mobile-space-2: calc(var(--mobile-unit) * 2);
+  --mobile-space-3: calc(var(--mobile-unit) * 3);
+  --mobile-space-4: calc(var(--mobile-unit) * 4);
+  --mobile-space-5: calc(var(--mobile-unit) * 5);
+  --mobile-space-6: calc(var(--mobile-unit) * 6);
+  --mobile-space-10: calc(var(--mobile-unit) * 10);
+  --mobile-space-12: calc(var(--mobile-unit) * 12);
+  --mobile-space-14: calc(var(--mobile-unit) * 14);
+  --mobile-radius: calc(var(--mobile-unit) * 2.4);
+  --mobile-font-xs: calc(var(--mobile-unit) * 2.2);
+  --mobile-font-sm: calc(var(--mobile-unit) * 2.6);
+  --mobile-font-md: calc(var(--mobile-unit) * 3.2);
+  --mobile-font-lg: calc(var(--mobile-unit) * 4);
+  --mobile-icon: calc(var(--mobile-unit) * 3.4);
+}
+
+[data-theme="dark"] {
+  --ink: #f1eee6;
+  --muted: rgba(241, 238, 230, 0.62);
+  --bg: #16181c;
+  --page-bg: radial-gradient(circle at top left, #242830 0%, #1b1f24 48%, #16181c 100%);
+  --surface: #1f2329;
+  --surface-alt: #2a3038;
+  --chip: #2a3038;
+  --border: rgba(241, 238, 230, 0.12);
+  --accent: #f1eee6;
+  --accent-contrast: #1a1d22;
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  --topbar-bg: linear-gradient(120deg, #232831 0%, #1b2027 100%);
+
+  --md-code-bg: #20252c;
+  --md-code-text: #f6f0e6;
+  --md-inline-code-bg: #2b313a;
+  --md-blockquote: #2a3038;
+  --md-border: rgba(241, 238, 230, 0.14);
+  --md-link: #f1d7a4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg);
+}
+
+#app {
+  width: 100%;
+  min-width: 100vw;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-title);
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}

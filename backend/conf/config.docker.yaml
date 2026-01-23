@@ -1,0 +1,30 @@
+host: "0.0.0.0"
+name: "web_app"
+mode: "dev"
+port: 8080
+version: "09"
+start_time: "2026-01-01"
+machine_id: 1
+
+log:
+  level: "debug"
+  filename: "/app/logfile/log.log"
+  max_size: 5
+  max_age: 30
+  max_backups: 10
+
+mysql:
+  host: "host.docker.internal"
+  port: 3306
+  user: "bloguser"
+  password: "password"
+  db_name: "blog"
+  max_open_connect: 200
+  max_idle_connect: 50
+
+redis:
+  host: "host.docker.internal"
+  port: 6379
+  password: "password"
+  db_name: 0
+  pool_size: 20

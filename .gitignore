@@ -1,0 +1,41 @@
+# Logs日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 前端构建 模块 mac隐藏文件
+node_modules
+.DS_Store
+dist
+dist-ssr
+coverage
+*.local
+
+# Cypress文件
+/cypress/videos/
+/cypress/screenshots/
+
+# ide文件Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ts构建缓存
+*.tsbuildinfo
+
+# 前端排除目录
+/frontend/dist/
+/frontend/node_modules/
+
+
+# 后端排除目录和文件
+# /backend/logfile/
+

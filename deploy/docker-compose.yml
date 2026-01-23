@@ -1,0 +1,29 @@
+services:
+  backend:
+    image: backend/ai-think:1.0.0
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      TZ: "Asia/Shanghai"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /opt/aithink/data/logs:/app/logfile
+      - /opt/aithink/data/uploads:/app/uploads
+      - /opt/aithink/data/conf/config.docker.yaml:/app/conf/config.docker.yaml:ro
+
+
+  frontend:
+    image: frontend/ai-think:1.0.0
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8081:80"
