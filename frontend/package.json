@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "highlight.js": "^11.10.0",
     "marked": "^15.0.6",
     "md-editor-v3": "^4.21.0",
     "pinia": "^2.2.6",

@@ -232,5 +232,10 @@ export default {
   },
   post: {
     detail: "文章",
+    code: {
+      copy: "复制",
+      copied: "已复制",
+      copyFailed: "复制失败",
+    },
   },
 };

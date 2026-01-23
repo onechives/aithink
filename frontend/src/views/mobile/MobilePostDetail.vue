@@ -17,7 +17,7 @@
       </div>
       <div class="cover" v-if="post.coverUrl" :style="{ backgroundImage: `url(${post.coverUrl})` }" />
     </header>
-    <section class="content" v-html="htmlContent" />
+    <section class="content" v-html="htmlContent" @click="handleContentClick" />
     <button class="like" @click="handleLike">
       <svg class="icon" viewBox="0 0 1024 1024" aria-hidden="true">
         <path
@@ -33,10 +33,17 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { marked } from "marked";
+import hljs from "highlight.js";
+import { useI18n } from "vue-i18n";
 import { getPostDetail, likePost, type PostDetail } from "../../api/posts";
 
 const route = useRoute();
 const post = ref<PostDetail | null>(null);
+const { t } = useI18n();
+
+const copyLabel = computed(() => t("post.code.copy"));
+const copiedLabel = computed(() => t("post.code.copied"));
+const copyFailedLabel = computed(() => t("post.code.copyFailed"));
 
 const tags = computed(() => {
   // 标签字符串转数组
@@ -47,8 +54,59 @@ const tags = computed(() => {
 const htmlContent = computed(() => {
   // Markdown 渲染为 HTML
   if (!post.value) return "";
-  return marked.parse(post.value.content);
+  return renderMarkdown(post.value.content, copyLabel.value);
 });
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderMarkdown(content: string, copyText: string) {
+  const renderer = new marked.Renderer();
+  renderer.code = (code, infostring, escaped) => {
+    const isToken = typeof code === "object" && code !== null;
+    const rawCode = isToken ? String((code as { text?: unknown }).text ?? "") : String(code ?? "");
+    const rawLangInput = isToken ? String((code as { lang?: unknown }).lang ?? "") : String(infostring ?? "");
+    const isEscaped = isToken ? Boolean((code as { escaped?: unknown }).escaped) : Boolean(escaped);
+    const rawLang = rawLangInput.match(/\S*/)?.[0] || "";
+    const safeLang = rawLang.replace(/[^a-zA-Z0-9_-]/g, "");
+    const langLabel = safeLang || "text";
+    const escapedLang = escapeHtml(langLabel);
+    const escapedCopy = escapeHtml(copyText);
+    const langClass = safeLang ? `language-${safeLang}` : "language-text";
+
+    let highlighted = "";
+    if (rawCode.trim()) {
+      try {
+        highlighted = safeLang && hljs.getLanguage(safeLang)
+          ? hljs.highlight(rawCode, { language: safeLang, ignoreIllegals: true }).value
+          : hljs.highlightAuto(rawCode).value;
+      } catch {
+        highlighted = "";
+      }
+    }
+    const escapedCode = highlighted || (isEscaped ? rawCode : escapeHtml(rawCode));
+
+    return `
+      <div class="code-block" data-lang="${escapedLang}">
+        <div class="code-toolbar">
+          <span class="code-dots" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </span>
+          <span class="code-lang">${escapedLang}</span>
+          <button class="code-copy" type="button" aria-label="${escapedCopy}">${escapedCopy}</button>
+        </div>
+        <pre><code class="hljs ${langClass}">${escapedCode}</code></pre>
+      </div>
+    `;
+  };
+  return marked.parse(content, { renderer });
+}
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString();
@@ -66,6 +124,58 @@ async function handleLike() {
   if (!post.value) return;
   const result = await likePost(post.value.id);
   post.value.likeCount = result.likeCount;
+}
+
+async function handleContentClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+  const button = target?.closest(".code-copy") as HTMLButtonElement | null;
+  if (!button) return;
+  const wrapper = button.closest(".code-block");
+  const code = wrapper?.querySelector("code")?.textContent ?? "";
+  if (!code) return;
+
+  const existingTimeout = button.dataset.resetTimeout;
+  if (existingTimeout) {
+    window.clearTimeout(Number(existingTimeout));
+  }
+
+  let success = false;
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(code);
+      success = true;
+    } catch {
+      success = false;
+    }
+  }
+
+  if (!success) {
+    const textarea = document.createElement("textarea");
+    textarea.value = code;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      success = document.execCommand("copy");
+    } catch {
+      success = false;
+    }
+    document.body.removeChild(textarea);
+  }
+
+  const originalLabel = button.dataset.label || button.textContent || copyLabel.value;
+  button.dataset.label = originalLabel;
+  button.textContent = success ? copiedLabel.value : copyFailedLabel.value;
+  button.classList.toggle("is-copied", success);
+
+  const resetTimeout = window.setTimeout(() => {
+    button.textContent = button.dataset.label || copyLabel.value;
+    button.classList.remove("is-copied");
+  }, 1600);
+  button.dataset.resetTimeout = String(resetTimeout);
 }
 
 watch(
@@ -86,6 +196,12 @@ watch(
   display: grid;
   gap: var(--mobile-space-3);
   box-shadow: var(--shadow);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.detail > * {
+  min-width: 0;
 }
 
 .hero {
@@ -121,6 +237,100 @@ watch(
   line-height: 1.8;
   overflow-wrap: anywhere;
   word-break: break-word;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.content :deep(.code-block) {
+  margin: 18px 0;
+  border-radius: var(--mobile-radius);
+  overflow: hidden;
+  border: 1px solid var(--md-code-toolbar-border);
+  background: var(--md-code-bg);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+  max-width: 100%;
+}
+
+.content :deep(.code-toolbar) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--md-code-toolbar);
+  border-bottom: 1px solid var(--md-code-toolbar-border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.content :deep(.code-dots) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.content :deep(.code-dots i) {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.content :deep(.code-dots i:nth-child(1)) {
+  background: #ff5f56;
+}
+
+.content :deep(.code-dots i:nth-child(2)) {
+  background: #ffbd2e;
+}
+
+.content :deep(.code-dots i:nth-child(3)) {
+  background: #27c93f;
+}
+
+.content :deep(.code-lang) {
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.content :deep(.code-copy) {
+  border: 1px solid var(--md-code-copy-border);
+  background: var(--md-code-copy-bg);
+  color: var(--md-code-copy-text);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.content :deep(.code-copy:active) {
+  transform: scale(0.98);
+}
+
+.content :deep(.code-copy.is-copied) {
+  background: #27c93f;
+  color: #111111;
+  border-color: #27c93f;
+}
+
+.content :deep(pre) {
+  background: var(--md-code-bg);
+  color: var(--md-code-text);
+  padding: 14px;
+  border-radius: var(--mobile-radius);
+  overflow: auto;
+  max-width: 100%;
+}
+
+.content :deep(.code-block pre) {
+  margin: 0;
+  border-radius: 0;
+  background: var(--md-code-bg);
 }
 
 .content :deep(img) {

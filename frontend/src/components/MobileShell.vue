@@ -2,7 +2,9 @@
   <div class="mobile-shell">
     <MobileTopBar />
     <main class="mobile-body">
-      <RouterView />
+      <div class="mobile-body__inner">
+        <RouterView />
+      </div>
     </main>
     <button v-if="showBackToTop" class="back-to-top" type="button" @click="scrollToTop"
       :aria-label="$t('home.backToTop')">
@@ -50,11 +52,23 @@ onBeforeUnmount(() => {
 .mobile-shell {
   min-height: 100vh;
   background: var(--page-bg);
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .mobile-body {
   padding-top: calc(var(--mobile-unit) * 9 + env(safe-area-inset-top));
   padding-bottom: calc(var(--mobile-space-14) + env(safe-area-inset-bottom));
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.mobile-body__inner {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  min-width: 0;
 }
 
 .back-to-top {

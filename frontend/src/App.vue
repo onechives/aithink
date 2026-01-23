@@ -19,7 +19,7 @@ const isMobileRoute = computed(() => route.path === "/m" || route.path.startsWit
 .app {
   min-height: 100vh;
   width: 100%;
-  min-width: 100vw;
+  min-width: 100%;
   background: var(--page-bg);
 }
 

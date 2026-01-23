@@ -232,5 +232,10 @@ export default {
   },
   post: {
     detail: "Article",
+    code: {
+      copy: "Copy",
+      copied: "Copied",
+      copyFailed: "Copy failed",
+    },
   },
 };
