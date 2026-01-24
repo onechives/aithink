@@ -2,6 +2,7 @@
   <div class="app" :class="{ 'app--mobile': isMobileRoute }">
     <TopBar v-if="!isMobileRoute" />
     <RouterView />
+    <FloatingActions v-if="!isMobileRoute" />
   </div>
 </template>
 
@@ -9,6 +10,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import TopBar from "./components/TopBar.vue";
+import FloatingActions from "./components/FloatingActions.vue";
 
 const route = useRoute();
 // 仅 /m 前缀走移动端壳，其他走 PC 布局

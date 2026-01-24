@@ -1,4 +1,5 @@
 import { useAuthStore } from "../stores/auth";
+import router from "../router";
 
 type UploadResponse = {
   // 上传接口统一响应结构
@@ -39,6 +40,14 @@ export async function uploadImage(files: File[]) {
       throw new Error(`upload failed: ${raw}`);
     }
     if (!response.ok || data.code !== 1000 || !data.data?.url) {
+      if (data.code === 1002 || data.code === 1003) {
+        auth.clearAuth();
+        const currentPath = router.currentRoute.value.path;
+        const target = currentPath.startsWith("/m") ? "/m/login" : "/login";
+        if (currentPath !== target) {
+          router.replace({ path: target, query: { redirect: currentPath } });
+        }
+      }
       throw new Error(data.message || "upload failed");
     }
     urls.push(data.data.url);

@@ -30,10 +30,34 @@
           <input v-model="form.tags" type="text" />
         </label>
       </div>
-      <label>
-        {{ $t('editor.coverUrl') }}
-        <input v-model="form.coverUrl" type="text" />
-      </label>
+      <div class="cover-field">
+        <span>{{ $t('editor.coverUrl') }}</span>
+        <div class="cover-actions">
+          <label class="cover-upload">
+            <input type="file" accept="image/*" @change="handleCoverSelect" />
+            <span>{{ form.coverUrl ? $t('editor.coverChange') : $t('editor.coverUpload') }}</span>
+          </label>
+          <button class="secondary" type="button" v-if="form.coverUrl" @click="handleCoverRemove">
+            {{ $t('editor.coverRemove') }}
+          </button>
+        </div>
+        <p class="cover-hint">{{ $t('editor.coverHint') }}</p>
+        <div v-if="form.coverUrl" class="cover-preview">
+          <img :src="form.coverUrl" alt="" />
+        </div>
+      </div>
+    </div>
+    <div v-if="coverCropVisible" class="cover-cropper">
+      <div class="cover-cropper__backdrop" @click="handleCoverCropCancel" />
+      <div class="cover-cropper__panel">
+        <img ref="coverImage" :src="coverPreview" alt="" />
+        <div class="cover-cropper__actions">
+          <button class="secondary" type="button" @click="handleCoverCropCancel">{{ $t('common.cancel') }}</button>
+          <button type="button" @click="handleCoverCropConfirm" :disabled="coverUploading">
+            {{ coverUploading ? $t('common.loading') : $t('editor.coverCrop') }}
+          </button>
+        </div>
+      </div>
     </div>
     <div class="editor-area">
       <MdEditor v-model="form.content" :toolbars="toolbars" :theme="theme" :language="editorLanguage"
@@ -44,10 +68,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { MdEditor } from "md-editor-v3";
 import "md-editor-v3/lib/style.css";
+import Cropper from "cropperjs";
+import "cropperjs/dist/cropper.css";
 import { createPost, deletePost, getPostDetail, updatePost } from "../api/posts";
 import { uploadImage } from "../api/uploads";
 import { useTheme } from "../composables/useTheme";
@@ -99,13 +125,20 @@ const form = reactive({
   tags: "",
 });
 
+const coverCropVisible = ref(false);
+const coverPreview = ref("");
+const coverUploading = ref(false);
+const coverImage = ref<HTMLImageElement | null>(null);
+let coverCropper: Cropper | null = null;
+let coverObjectUrl = "";
+
 async function loadPost() {
   // 进入编辑态时加载文章详情
   const id = route.params.id ? String(route.params.id) : "";
   if (!id) return;
   const data = await getPostDetail(id);
   form.title = data.title;
-  form.summary = data.summary;
+  form.summary = data.summary || deriveSummary(data.content, 100);
   form.content = data.content;
   form.coverUrl = data.coverUrl;
   form.category = data.category;
@@ -113,10 +146,17 @@ async function loadPost() {
   isEditing.value = true;
 }
 
+function applySummary() {
+  if (!form.summary.trim()) {
+    form.summary = deriveSummary(form.content, 100);
+  }
+}
+
 async function handleSave() {
   // 保存文章（新建或更新）
   error.value = "";
   try {
+    applySummary();
     if (isEditing.value && route.params.id) {
       await updatePost(String(route.params.id), form);
     } else {
@@ -132,6 +172,7 @@ async function handleSaveAndReturn() {
   // 保存后返回“我的文章”
   error.value = "";
   try {
+    applySummary();
     if (isEditing.value && route.params.id) {
       await updatePost(String(route.params.id), form);
     } else {
@@ -154,8 +195,101 @@ async function handleDelete() {
   }
 }
 
+function handleCoverSelect(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  openCoverCropper(file);
+  input.value = "";
+}
+
+function openCoverCropper(file: File) {
+  cleanupCoverCropper();
+  coverObjectUrl = URL.createObjectURL(file);
+  coverPreview.value = coverObjectUrl;
+  coverCropVisible.value = true;
+  nextTick(() => {
+    if (!coverImage.value) return;
+    coverCropper = new Cropper(coverImage.value, {
+      aspectRatio: 16 / 9,
+      viewMode: 1,
+      autoCropArea: 1,
+      background: false,
+      responsive: true,
+    });
+  });
+}
+
+async function handleCoverCropConfirm() {
+  if (!coverCropper) return;
+  coverUploading.value = true;
+  try {
+    const canvas = coverCropper.getCroppedCanvas({
+      width: 1280,
+      height: 720,
+      imageSmoothingQuality: "high",
+    });
+    if (!canvas) {
+      error.value = "cover crop failed";
+      return;
+    }
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob) {
+      error.value = "cover crop failed";
+      return;
+    }
+    const file = new File([blob], `cover-${Date.now()}.jpg`, { type: blob.type });
+    const urls = await uploadImage([file]);
+    form.coverUrl = urls[0] || "";
+    coverCropVisible.value = false;
+    cleanupCoverCropper();
+  } catch (err) {
+    error.value = (err as Error).message;
+  } finally {
+    coverUploading.value = false;
+  }
+}
+
+function handleCoverCropCancel() {
+  coverCropVisible.value = false;
+  cleanupCoverCropper();
+}
+
+function handleCoverRemove() {
+  form.coverUrl = "";
+}
+
+function cleanupCoverCropper() {
+  if (coverCropper) {
+    coverCropper.destroy();
+    coverCropper = null;
+  }
+  if (coverObjectUrl) {
+    URL.revokeObjectURL(coverObjectUrl);
+    coverObjectUrl = "";
+  }
+  coverPreview.value = "";
+}
+
+function deriveSummary(content: string, maxLength: number) {
+  const plain = content
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[#>*_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!plain) return "";
+  return Array.from(plain).slice(0, maxLength).join("");
+}
+
 onMounted(() => {
   loadPost();
+});
+
+onBeforeUnmount(() => {
+  cleanupCoverCropper();
 });
 </script>
 
@@ -222,6 +356,57 @@ label {
   font-weight: 600;
 }
 
+.cover-field {
+  display: grid;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.cover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.cover-upload {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--surface);
+}
+
+.cover-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cover-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.cover-preview {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  max-width: 360px;
+}
+
+.cover-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 input,
 textarea {
   border-radius: 8px;
@@ -231,6 +416,7 @@ textarea {
   font-family: inherit;
   background: var(--surface);
   color: var(--ink);
+  resize: none;
 }
 
 .row {
@@ -248,8 +434,60 @@ textarea {
   background: var(--surface);
 }
 
+.editor-area :deep(.md-editor-footer) {
+  order: -1;
+  border-top: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.editor-area :deep(.md-editor-footer-item) {
+  padding: 0 10px;
+}
+
 .error {
   color: #b00020;
+}
+
+.cover-cropper {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+}
+
+.cover-cropper__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.cover-cropper__panel {
+  position: relative;
+  z-index: 1;
+  width: min(720px, 92vw);
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.cover-cropper__panel img {
+  width: 100%;
+  max-height: 60vh;
+  display: block;
+  object-fit: contain;
+}
+
+.cover-cropper__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 @media (max-width: 960px) {
@@ -282,6 +520,19 @@ textarea {
   }
 
   .editor-area {
+    border-radius: var(--mobile-radius);
+  }
+
+  .cover-actions {
+    width: 100%;
+  }
+
+  .cover-preview {
+    max-width: 100%;
+  }
+
+  .cover-cropper__panel {
+    width: min(600px, 92vw);
     border-radius: var(--mobile-radius);
   }
 

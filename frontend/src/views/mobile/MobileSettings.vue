@@ -36,8 +36,17 @@
     <div v-if="auth.role === 'admin'" class="mobile-section">
       <h3 class="section-title">{{ $t('settings.sectionAdmin') }}</h3>
       <div class="section-card">
-        <button class="mobile-item" type="button" @click="router.push({ name: 'admin-posts' })">
-          {{ $t('nav.manage') }}
+        <button class="mobile-item" type="button" @click="router.push({ name: 'm-admin-posts' })">
+          {{ $t('admin.postManage') }}
+        </button>
+        <button class="mobile-item" type="button" @click="router.push({ name: 'm-admin-review-posts' })">
+          {{ $t('admin.postReview') }}
+        </button>
+        <button class="mobile-item" type="button" @click="router.push({ name: 'm-admin-review-users' })">
+          {{ $t('admin.userReview') }}
+        </button>
+        <button class="mobile-item" type="button" @click="router.push({ name: 'm-admin-review-nicknames' })">
+          {{ $t('admin.nicknameReview') }}
         </button>
       </div>
     </div>
@@ -51,13 +60,9 @@
         <button v-if="!isAuthed" class="mobile-item" type="button" @click="router.push({ name: 'm-register' })">
           {{ $t('nav.register') }}
         </button>
-        <button v-if="isAuthed" class="mobile-item danger" type="button" @click="handleLogout">
-          {{ $t('nav.logout') }}
-        </button>
       </div>
       <div v-if="isAuthed" class="card">
         <h3>{{ $t('settings.nicknameTitle') }}</h3>
-        <p>{{ $t('settings.nicknameDesc') }}</p>
         <div class="nickname">
           <div>
             <span>{{ $t('settings.currentNickname') }}</span>
@@ -107,6 +112,12 @@
         <span class="success" v-if="success">{{ success }}</span>
         <span class="error" v-if="error">{{ error }}</span>
       </div>
+    </div>
+
+    <div v-if="isAuthed" class="section-card logout-card">
+      <button class="mobile-item danger logout" type="button" @click="handleLogout">
+        {{ $t('nav.logout') }}
+      </button>
     </div>
   </section>
 </template>
@@ -260,7 +271,7 @@ onMounted(() => {
 
 .section-title {
   margin: 0;
-  font-size: var(--mobile-font-sm);
+  font-size: var(--mobile-font-md);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -282,6 +293,7 @@ onMounted(() => {
   border: none;
   padding: var(--mobile-space-3);
   font-weight: 600;
+  font-size: var(--mobile-font-md);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -311,6 +323,7 @@ onMounted(() => {
 .mobile-item .value {
   color: var(--muted);
   font-weight: 500;
+  font-size: inherit;
 }
 
 .section-inline {
@@ -325,6 +338,7 @@ onMounted(() => {
 .inline-label {
   font-weight: 600;
   color: var(--ink);
+  font-size: var(--mobile-font-md);
 }
 
 .lang-switch {
@@ -365,12 +379,12 @@ onMounted(() => {
 
 .card h3 {
   margin: 0;
-  font-size: var(--mobile-font-sm);
+  font-size: var(--mobile-font-md);
 }
 
 .card p {
   margin: 0;
-  font-size: var(--mobile-font-xs);
+  font-size: var(--mobile-font-md);
   color: var(--muted);
 }
 
@@ -389,14 +403,14 @@ label {
   display: grid;
   gap: var(--mobile-space-1);
   font-weight: 600;
-  font-size: var(--mobile-font-xs);
+  font-size: var(--mobile-font-md);
 }
 
 input {
   border-radius: var(--mobile-radius);
   border: 1px solid var(--border);
   padding: var(--mobile-space-2);
-  font-size: var(--mobile-font-sm);
+  font-size: var(--mobile-font-md);
   background: var(--surface);
   color: var(--ink);
 }
@@ -442,5 +456,10 @@ code {
 
 .miyao {
   width: 100%;
+}
+
+.logout-card .mobile-item.logout {
+  justify-content: center;
+  text-align: center;
 }
 </style>

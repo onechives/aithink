@@ -27,7 +27,7 @@
           <button v-if="post.status !== 'approved'" @click="handleApprove(post.id)">{{ $t('admin.approve') }}</button>
           <button v-if="post.status !== 'rejected'" class="secondary" @click="handleReject(post.id)">{{
             $t('admin.reject') }}</button>
-          <RouterLink class="link" :to="`/posts/${post.id}`">{{ $t('common.preview') }}</RouterLink>
+          <RouterLink class="link" :to="`${detailBase}/${post.id}`">{{ $t('common.preview') }}</RouterLink>
         </span>
       </div>
     </div>
@@ -41,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { approvePost, listAdminPosts, rejectPost, type PostSummary } from "../api/posts";
 
@@ -51,6 +52,9 @@ const page = ref(1);
 const size = 10;
 const status = ref("pending");
 const { t } = useI18n();
+const route = useRoute();
+const isMobileRoute = computed(() => route.path.startsWith("/m"));
+const detailBase = computed(() => (isMobileRoute.value ? "/m/posts" : "/posts"));
 
 async function fetchPosts() {
   // 按审核状态拉取文章

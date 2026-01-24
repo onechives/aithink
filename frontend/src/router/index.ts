@@ -4,6 +4,7 @@ import PostDetailView from "../views/PostDetail.vue";
 import LoginView from "../views/Login.vue";
 import RegisterView from "../views/Register.vue";
 import AdminEditorView from "../views/AdminEditor.vue";
+import AdminLayoutView from "../views/AdminLayout.vue";
 import AdminPostsView from "../views/AdminPosts.vue";
 import AdminReviewView from "../views/AdminReview.vue";
 import AdminUsersView from "../views/AdminUsers.vue";
@@ -34,10 +35,17 @@ const router = createRouter({
     { path: "/me/posts", name: "my-posts", component: MyPostsView, meta: { titleKey: "myPosts.title" } },
     { path: "/me/settings", name: "account-settings", component: AccountSettingsView, meta: { titleKey: "settings.title" } },
     { path: "/me/messages", name: "messages", component: MessagesView, meta: { titleKey: "messages.title" } },
-    { path: "/admin/posts", name: "admin-posts", component: AdminPostsView, meta: { titleKey: "admin.postManage" } },
-    { path: "/admin/review/posts", name: "admin-review-posts", component: AdminReviewView, meta: { titleKey: "admin.postReview" } },
-    { path: "/admin/review/users", name: "admin-review-users", component: AdminUsersView, meta: { titleKey: "admin.userReview" } },
-    { path: "/admin/review/nicknames", name: "admin-review-nicknames", component: AdminNicknamesView, meta: { titleKey: "admin.nicknameReview" } },
+    {
+      path: "/admin",
+      component: AdminLayoutView,
+      redirect: "/admin/posts",
+      children: [
+        { path: "posts", name: "admin-posts", component: AdminPostsView, meta: { titleKey: "admin.postManage" } },
+        { path: "review/posts", name: "admin-review-posts", component: AdminReviewView, meta: { titleKey: "admin.postReview" } },
+        { path: "review/users", name: "admin-review-users", component: AdminUsersView, meta: { titleKey: "admin.userReview" } },
+        { path: "review/nicknames", name: "admin-review-nicknames", component: AdminNicknamesView, meta: { titleKey: "admin.nicknameReview" } },
+      ],
+    },
     {
       path: "/m",
       component: MobileShell,
@@ -51,6 +59,10 @@ const router = createRouter({
         { path: "messages", name: "m-messages", component: MobileMessages, meta: { titleKey: "messages.title" } },
         { path: "login", name: "m-login", component: MobileLogin, meta: { titleKey: "login.title", hideMobileNav: true } },
         { path: "register", name: "m-register", component: MobileRegister, meta: { titleKey: "register.title", hideMobileNav: true } },
+        { path: "admin/posts", name: "m-admin-posts", component: AdminPostsView, meta: { titleKey: "admin.postManage" } },
+        { path: "admin/review/posts", name: "m-admin-review-posts", component: AdminReviewView, meta: { titleKey: "admin.postReview" } },
+        { path: "admin/review/users", name: "m-admin-review-users", component: AdminUsersView, meta: { titleKey: "admin.userReview" } },
+        { path: "admin/review/nicknames", name: "m-admin-review-nicknames", component: AdminNicknamesView, meta: { titleKey: "admin.nicknameReview" } },
       ],
     },
   ],
@@ -67,7 +79,16 @@ router.beforeEach((to) => {
     }
   }
   // 管理端路由必须是管理员
-  if (to.name === "admin-posts" || to.name === "admin-review-posts" || to.name === "admin-review-users" || to.name === "admin-review-nicknames") {
+  if (
+    to.name === "admin-posts" ||
+    to.name === "admin-review-posts" ||
+    to.name === "admin-review-users" ||
+    to.name === "admin-review-nicknames" ||
+    to.name === "m-admin-posts" ||
+    to.name === "m-admin-review-posts" ||
+    to.name === "m-admin-review-users" ||
+    to.name === "m-admin-review-nicknames"
+  ) {
     if (!auth.token || auth.role !== "admin") {
       return { name: "login" };
     }

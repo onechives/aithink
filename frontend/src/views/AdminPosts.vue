@@ -6,11 +6,8 @@
         <p>{{ $t('editor.description') }}</p>
       </div>
       <div class="actions">
-        <RouterLink class="nav" to="/admin/review/posts">{{ $t('admin.postReview') }}</RouterLink>
-        <RouterLink class="nav" to="/admin/review/users">{{ $t('admin.userReview') }}</RouterLink>
-        <RouterLink class="nav" to="/admin/review/nicknames">{{ $t('admin.nicknameReview') }}</RouterLink>
         <input v-model="keyword" type="text" :placeholder="$t('common.search') + '...'" @input="handleSearch" />
-        <button @click="router.push({ name: 'editor' })">{{ $t('editor.newTitle') }}</button>
+        <button @click="router.push({ name: isMobileRoute.value ? 'm-editor' : 'editor' })">{{ $t('editor.newTitle') }}</button>
       </div>
     </header>
 
@@ -28,8 +25,8 @@
         <span :data-label="$t('home.likes')">{{ post.likeCount }}</span>
         <span :data-label="$t('common.save')">{{ formatDate(post.updatedAt) }}</span>
         <span class="row-actions" :data-label="$t('admin.action')">
-          <RouterLink :to="`/write/${post.id}`">{{ $t('admin.edit') }}</RouterLink>
-          <RouterLink class="link" :to="`/posts/${post.id}`">{{ $t('common.preview') }}</RouterLink>
+          <RouterLink :to="`${editorBase}/${post.id}`">{{ $t('admin.edit') }}</RouterLink>
+          <RouterLink class="link" :to="`${detailBase}/${post.id}`">{{ $t('common.preview') }}</RouterLink>
         </span>
       </div>
     </div>
@@ -43,17 +40,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { listPosts, type PostSummary } from "../api/posts";
 
 const router = useRouter();
+const route = useRoute();
 const posts = ref<PostSummary[]>([]);
 const total = ref(0);
 const page = ref(1);
 const size = 10;
 const sort = "latest";
 const keyword = ref("");
+const isMobileRoute = computed(() => route.path.startsWith("/m"));
+const editorBase = computed(() => (isMobileRoute.value ? "/m/write" : "/write"));
+const detailBase = computed(() => (isMobileRoute.value ? "/m/posts" : "/posts"));
 
 async function fetchPosts() {
   // 按关键词与分页获取文章列表
@@ -141,15 +142,6 @@ input {
   color: var(--ink);
 }
 
-.nav {
-  text-decoration: none;
-  color: var(--ink);
-  font-weight: 600;
-  background: var(--surface-alt);
-  padding: 10px 14px;
-  border-radius: 10px;
-}
-
 button {
   border: none;
   background: var(--accent);
@@ -234,21 +226,29 @@ button {
   .actions {
     flex-wrap: wrap;
     align-items: stretch;
+    justify-content: center;
+    width: 100%;
   }
 
   .actions input {
     width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
   }
 
   .actions button,
   .actions .nav {
     width: 100%;
     text-align: center;
+    max-width: 520px;
+    margin: 0 auto;
   }
 
   .table {
     border: none;
     background: transparent;
+    border-radius: 0;
+    overflow: visible;
   }
 
   .row {
@@ -256,6 +256,8 @@ button {
     border: 1px solid var(--border);
     border-radius: var(--mobile-radius);
     margin-bottom: var(--mobile-space-3);
+    background: var(--surface);
+    overflow: hidden;
   }
 
   .row.header {
@@ -272,14 +274,43 @@ button {
   .row > span::before {
     content: attr(data-label);
     color: var(--muted);
-    font-size: var(--mobile-font-xs);
+    font-size: var(--mobile-font-sm);
     text-transform: uppercase;
     letter-spacing: calc(var(--mobile-unit) * 0.1);
+    text-align: left;
+    justify-self: start;
   }
 
   .row .row-actions {
-    display: grid;
+    display: flex;
+    flex-wrap: nowrap;
     gap: var(--mobile-space-2);
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+  }
+
+  .row .row-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-weight: 600;
+    font-size: var(--mobile-font-xs);
+    text-decoration: none;
+  }
+
+  .row .row-actions::before {
+    margin-right: auto;
+  }
+
+  .row .row-actions a.link {
+    background: var(--accent);
+    color: var(--accent-contrast);
+    border-color: transparent;
   }
 }
 

@@ -4,20 +4,22 @@ import (
 	"aithink/logic"
 	"aithink/models"
 	"github.com/gin-gonic/gin"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 type PostCreateRequest struct {
 	// 文章标题
 	Title    string `json:"title" binding:"required"`
 	// 文章摘要
-	Summary  string `json:"summary" binding:"required"`
+	Summary  string `json:"summary"`
 	// Markdown 正文
 	Content  string `json:"content" binding:"required"`
 	// 封面图地址
 	CoverURL string `json:"coverUrl"`
 	// 分类
-	Category string `json:"category" binding:"required"`
+	Category string `json:"category"`
 	// 标签（逗号分隔）
 	Tags     string `json:"tags"`
 }
@@ -25,10 +27,10 @@ type PostCreateRequest struct {
 type PostUpdateRequest struct {
 	// 更新用字段，与创建保持一致
 	Title    string `json:"title" binding:"required"`
-	Summary  string `json:"summary" binding:"required"`
+	Summary  string `json:"summary"`
 	Content  string `json:"content" binding:"required"`
 	CoverURL string `json:"coverUrl"`
-	Category string `json:"category" binding:"required"`
+	Category string `json:"category"`
 	Tags     string `json:"tags"`
 }
 
@@ -36,6 +38,37 @@ type PostListResponse struct {
 	// 文章列表 + 总数
 	Items []models.PostSummary `json:"items"`
 	Total int64                `json:"total"`
+}
+
+var (
+	reCodeFence = regexp.MustCompile("(?s)```.*?```")
+	reInline    = regexp.MustCompile("`[^`]*`")
+	reImage     = regexp.MustCompile("!\\[[^\\]]*\\]\\([^\\)]*\\)")
+	reLink      = regexp.MustCompile("\\[([^\\]]+)\\]\\([^\\)]*\\)")
+	reHeading   = regexp.MustCompile("(?m)^#{1,6}\\s*")
+	reList      = regexp.MustCompile("(?m)^\\s*[-*+\\d+.]+\\s+")
+)
+
+func buildSummary(content string, maxLen int) string {
+	plain := content
+	plain = reCodeFence.ReplaceAllString(plain, " ")
+	plain = reInline.ReplaceAllString(plain, " ")
+	plain = reImage.ReplaceAllString(plain, " ")
+	plain = reLink.ReplaceAllString(plain, "$1")
+	plain = reHeading.ReplaceAllString(plain, "")
+	plain = reList.ReplaceAllString(plain, "")
+	plain = strings.ReplaceAll(plain, "\r", " ")
+	plain = strings.ReplaceAll(plain, "\n", " ")
+	plain = strings.TrimSpace(plain)
+	plain = strings.Join(strings.Fields(plain), " ")
+	if plain == "" {
+		return ""
+	}
+	runes := []rune(plain)
+	if len(runes) > maxLen {
+		return string(runes[:maxLen])
+	}
+	return plain
 }
 
 // PostCreateHandler 创建文章；普通用户为待审核状态。
@@ -50,6 +83,9 @@ func PostCreateHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ResponseError(c, CodeInvalidParams)
 		return
+	}
+	if strings.TrimSpace(req.Summary) == "" {
+		req.Summary = buildSummary(req.Content, 100)
 	}
 	post := &models.Post{
 		Title:    req.Title,
@@ -84,6 +120,9 @@ func PostUpdateHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ResponseError(c, CodeInvalidParams)
 		return
+	}
+	if strings.TrimSpace(req.Summary) == "" {
+		req.Summary = buildSummary(req.Content, 100)
 	}
 	existing, err := logic.GetPostDetail(id)
 	if err != nil {

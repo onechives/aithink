@@ -17,7 +17,6 @@
       </div>
       <div v-if="isAuthed" class="card">
         <h3>{{ $t('settings.nicknameTitle') }}</h3>
-        <p>{{ $t('settings.nicknameDesc') }}</p>
         <div class="nickname">
           <div>
             <span>{{ $t('settings.currentNickname') }}</span>
