@@ -2,74 +2,37 @@
 services:
   # 后端服务定义
   backend:
-    # 运行的镜像标签（本地构建或拉取）
+    # 运行的镜像标签
     image: backend/ai-think:1.0.0
-    # 服务的网络连接
-    networks:
-      # 使用下方定义的默认网络
-      default:
-        # 默认网络上的静态 IPv4 地址
-        ipv4_address: 172.88.0.10
+    # 使用主机网络模式 (提升性能与安全性)
+    network_mode: host
     # 镜像构建配置
     build:
-      # 构建上下文目录
       context: ..
-      # Dockerfile 路径（相对 context）
       dockerfile: backend/Dockerfile
     # 重启策略
     restart: unless-stopped
-    # 主机到容器端口映射
-    ports:
-      - "127.0.0.1:8080:8080" # 绑定主机 127.0.0.1:8080 -> 容器 8080
     # 容器环境变量
     environment:
-      # 容器时区
       TZ: "Asia/Shanghai"
-    # /etc/hosts 里的额外主机映射
-    extra_hosts:
-      - "host.docker.internal:host-gateway" # 映射到宿主机网关 IP
     # 挂载卷
     volumes:
-      - /opt/aithink/data/logs:/app/logfile # 宿主机日志目录 -> 容器日志目录
-      - /opt/aithink/data/uploads:/app/uploads # 宿主机上传目录 -> 容器上传目录
-      - /opt/aithink/data/conf/config.docker.yaml:/app/conf/config.docker.yaml:ro # 宿主机配置文件 -> 容器配置（只读）
+      - ./data/logs:/app/logfile # 宿主机日志目录 -> 容器日志目录
+      - ./data/uploads:/app/uploads # 宿主机上传目录 -> 容器上传目录
+      - ./data/conf/config.docker.yaml:/app/conf/config.docker.yaml:ro # 宿主机配置文件 -> 容器配置（只读）
 
   # 前端服务定义
   frontend:
-    # 运行的镜像标签（本地构建或拉取）
+    # 运行的镜像标签
     image: frontend/ai-think:1.0.0
-    # 服务的网络连接
-    networks:
-      # 使用下方定义的默认网络
-      default:
-        # 默认网络上的静态 IPv4 地址
-        ipv4_address: 172.88.0.11
+    # 使用主机网络模式
+    network_mode: host
     # 镜像构建配置
     build:
-      # 构建上下文目录
       context: ..
-      # Dockerfile 路径（相对 context）
       dockerfile: frontend/Dockerfile
     # 重启策略
     restart: unless-stopped
-    # 依赖服务（用于启动顺序）
+    # 依赖服务
     depends_on:
-      # 等待后端服务启动
       - backend
-    # 主机到容器端口映射
-    ports:
-      - "127.0.0.1:8081:80" # 绑定主机 127.0.0.1:8081 -> 容器 80
-
-# 网络定义
-networks:
-  # 本 Compose 项目的默认网络
-  default:
-    # 显式网络名（稳定不变）
-    name: aithink_net
-    # 网络的 IP 地址管理
-    ipam:
-      # IPAM 配置列表
-      config:
-        # 网络的子网与网关
-        - subnet: 172.88.0.0/16
-          gateway: 172.88.0.1

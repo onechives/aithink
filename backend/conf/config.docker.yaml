@@ -1,4 +1,4 @@
-host: "0.0.0.0"
+host: "127.0.0.1"
 name: "web_app"
 mode: "dev"
 port: 8080
@@ -14,7 +14,7 @@ log:
   max_backups: 10
 
 mysql:
-  host: "host.docker.internal"
+  host: "127.0.0.1"
   port: 3306
   user: "bloguser"
   password: "password"
@@ -23,7 +23,7 @@ mysql:
   max_idle_connect: 50
 
 redis:
-  host: "host.docker.internal"
+  host: "127.0.0.1"
   port: 6379
   password: "password"
   db_name: 0

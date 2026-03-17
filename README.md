@@ -106,15 +106,21 @@ sudo systemctl restart redis-server
 建议使用防火墙限制 6379 端口仅对本机或 Docker 网桥开放。
 
 ### 3) 配置后端 Docker 连接宿主机服务
-`backend/conf/config.docker.yaml` 已默认使用 `host.docker.internal` 访问宿主机 MariaDB/Redis。
-如需自定义账号、密码或端口，请修改该文件中的 `mysql` 与 `redis` 配置。
+由于采用了 `host` 网络模式，容器可以直接通过 `127.0.0.1` 访问宿主机服务。
 
-> 注意：Linux 上 `host.docker.internal` 需要 Docker 20.10+ 并通过 `extra_hosts` 映射（已在 `deploy/docker-compose.yml` 中配置）。  
-> 若宿主机未支持，请改为宿主机在 docker0 网桥上的 IP（例如 `172.17.0.1`）。
+> [!IMPORTANT]
+> **安全建议**：为了最大化安全性，建议将宿主机的 MariaDB 和 Redis 绑定地址（bind-address）修改为 `127.0.0.1`。这样数据库将只允许物理机本地以及 `host` 模式的容器访问，杜绝了公网暴露风险。
 
-### 4) 准备宿主机日志目录与上传目录
+### 4) 准备宿主机相关目录与配置文件（在项目根目录 /opt/aithink 执行）
 ```bash
+cd /opt/aithink
+
+# 创建日志与上传目录
 mkdir -p deploy/data/logs deploy/data/uploads
+
+# 创建配置目录并准备 Docker 专用配置文件（重要：避免 Docker 自动将其创建为目录）
+mkdir -p deploy/data/conf
+cp backend/conf/config.docker.yaml deploy/data/conf/
 ```
 `deploy/data/logs` 将映射到容器内 `/app/logfile`，日志文件路径为 `/app/logfile/log.log`。
 
@@ -124,9 +130,9 @@ cd deploy
 docker compose up -d --build
 ```
 
-容器端口（仅本机回环）：
-- 前端容器：`127.0.0.1:8081`
-- 后端容器：`127.0.0.1:8080`
+容器端口（直接映射在主机接口）：
+- 后端服务：`127.0.0.1:8080`
+- 前端服务：`127.0.0.1:80` (取决于 Dockerfile 中的 Nginx 配置)
 
 ### 6) 配置宿主机 Nginx 反向代理
 将 `deploy/nginx.conf` 复制到 Nginx 站点配置（示例路径 `/etc/nginx/sites-available/aithink.conf`）：
