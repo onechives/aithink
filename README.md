@@ -171,7 +171,6 @@ VITE_API_BASE=http://your-api-host
 ## 其他说明
 - 上传文件默认保存在 `backend/uploads/`，Docker 部署时映射到 `deploy/data/uploads/`
 - 日志输出在 `deploy/data/logs/`（容器内路径 `/app/logfile`）
+- 部署文档：DEPLOY.md
 
-
-- 详细部署教程在博客 https://www.ai-code.net/
-- 博客就是用这个项目搭建的
+- 博客demo： https://www.ai-code.net/
