@@ -122,3 +122,5 @@ server {
 - **查看后端日志**: `docker compose logs -f backend`
 - **更新代码后重启**: `docker compose down && docker compose up -d --build`
 - **只重启某个服务**: `docker compose restart backend`
+
+##
